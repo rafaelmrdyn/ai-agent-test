@@ -35,7 +35,7 @@ Task:
         "Authorization": `Bearer ${API_KEY}`,
       },
       body: JSON.stringify({
-        model: "deepseek-r1:free",
+        model: "deepseek/deepseek-r1:free",
         messages: [{ role: "user", content: prompt }],
       }),
     });
