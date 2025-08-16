@@ -8,31 +8,39 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
+      # 1️⃣ Checkout the repo with full history
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed for git diff to work
 
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install deps
-        run: npm install
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm install madge glob openai
 
+      # 4️⃣ Extract routes and dependency graph
       - name: Extract routes & deps
         run: node scripts/analyzeRoutes.js
 
+      # 5️⃣ Get PR diff safely using GitHub SHA
       - name: Get PR diff
         id: diff
         run: |
-          git fetch origin ${{ github.base_ref }}
-          git diff origin/${{ github.base_ref }}...HEAD > pr.diff
+          git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} > pr.diff
           echo "diff=$(cat pr.diff)" >> $GITHUB_OUTPUT
 
+      # 6️⃣ Run AI agent
       - name: Run AI agent
         run: node scripts/aiAgent.js "${{ steps.diff.outputs.diff }}"
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
+      # 7️⃣ Post comment on PR
       - name: Post PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
