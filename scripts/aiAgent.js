@@ -3,12 +3,12 @@ import OpenAI from "openai";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function run() {
-  const diff = process.argv[2]; // git diff passed in
-  const routes = JSON.parse(fs.readFileSync("routes.json", "utf8"));
-  const deps = JSON.parse(fs.readFileSync("deps.json", "utf8"));
+// Read the diff directly from file
+const diff = fs.readFileSync("pr.diff", "utf8");
+const routes = JSON.parse(fs.readFileSync("routes.json", "utf8"));
+const deps = JSON.parse(fs.readFileSync("deps.json", "utf8"));
 
-  const prompt = `
+const prompt = `
 You are an AI code analysis agent.
 
 Here is the Git diff for this PR:
@@ -28,6 +28,7 @@ Task:
    - Mermaid diagram showing dependencies from changed code → routes
 `;
 
+(async () => {
   const res = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
@@ -36,6 +37,4 @@ Task:
   const output = res.choices[0].message?.content || "No analysis";
   fs.writeFileSync("impact.md", output);
   console.log(output);
-}
-
-run();
+})();

@@ -32,7 +32,6 @@ jobs:
         id: diff
         run: |
           git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} > pr.diff
-          echo "diff=$(cat pr.diff)" >> $GITHUB_OUTPUT
 
       # 6️⃣ Run AI agent
       - name: Run AI agent
