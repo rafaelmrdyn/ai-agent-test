@@ -1,14 +1,12 @@
 const fs = require("fs");
-const fetch = require("node-fetch"); // If Node 18+, you can remove this
+const fetch = require("node-fetch"); // v2 for CommonJS
 
 const API_KEY = process.env.DEEPSEEK_API_KEY;
 
-// Read PR diff, routes, deps
 const diff = fs.readFileSync("pr.diff", "utf8");
 const routes = JSON.parse(fs.readFileSync("routes.json", "utf8"));
 const deps = JSON.parse(fs.readFileSync("deps.json", "utf8"));
 
-// Prepare prompt
 const prompt = `
 You are an AI code analysis agent.
 
@@ -45,7 +43,6 @@ Task:
     const data = await response.json();
     console.log("Raw API response:", JSON.stringify(data, null, 2));
 
-    // Handle possible DeepSeek response formats
     let output = "No analysis";
     if (data.choices && data.choices[0]) {
       if (data.choices[0].message && data.choices[0].message.content) {
