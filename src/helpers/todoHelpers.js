@@ -81,7 +81,7 @@ const updateTodo = (id, updates) => {
   
   const updatedTodo = {
     ...todos[todoIndex],
-    ...updates,
+    // ...updates,
     updatedAt: new Date().toISOString()
   };
   
