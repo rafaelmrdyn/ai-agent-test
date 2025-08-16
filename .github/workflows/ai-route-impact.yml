@@ -1,0 +1,39 @@
+name: AI Route Impact Agent
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm install
+
+      - name: Extract routes & deps
+        run: node scripts/analyzeRoutes.js
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff origin/${{ github.base_ref }}...HEAD > pr.diff
+          echo "diff=$(cat pr.diff)" >> $GITHUB_OUTPUT
+
+      - name: Run AI agent
+        run: node scripts/aiAgent.js "${{ steps.diff.outputs.diff }}"
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Post PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: impact.md
