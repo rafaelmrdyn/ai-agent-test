@@ -112,7 +112,7 @@ router.put('/:id', (req, res) => {
   const updatedTodo = {
     ...todos[todoIndex],
     title: title !== undefined ? title.trim() : todos[todoIndex].title,
-    description: description !== undefined ? description.trim() : todos[todoIndex].description,
+    descriptions: description !== undefined ? description.trim() : todos[todoIndex].description,
     completed: completed !== undefined ? completed : todos[todoIndex].completed,
     updatedAt: new Date().toISOString()
   };
