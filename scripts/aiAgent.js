@@ -31,7 +31,7 @@ Task:
 (async () => {
   try {
     const res = await client.chat.completions.create({
-      model: "gpt-4o-mini",       // use GPT-4o-mini
+      model: "gpt-3.5-turbo",       // use GPT-4o-mini
       messages: [{ role: "user", content: prompt }],
     });
 
