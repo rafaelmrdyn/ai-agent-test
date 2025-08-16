@@ -8,16 +8,19 @@ A simple Express.js starter with a complete todo REST API implementation.
 - 🔍 Search and filter functionality
 - 🛡️ Security middleware (Helmet, CORS)
 - 📝 Request logging (Morgan)
-- 🏗️ Modular router structure
+- 🏗️ Modular router structure with helper functions
 - 🚀 Development mode with hot reload
+- 🔧 Separation of concerns (routes vs business logic)
 
 ## Project Structure
 
 ```
 ├── src/
-│   ├── app.js          # Main Express application
+│   ├── app.js              # Main Express application
+│   ├── helpers/
+│   │   └── todoHelpers.js  # Todo business logic and helper functions
 │   └── router/
-│       └── todo.js     # Todo routes and logic
+│       └── todo.js         # Todo routes
 ├── package.json
 └── README.md
 ```
