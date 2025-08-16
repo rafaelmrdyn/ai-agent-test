@@ -1,5 +1,5 @@
-import fs from "fs";
-import fetch from "node-fetch"; // If using Node 18+, fetch is built-in
+const fs = require("fs");
+const fetch = require("node-fetch"); // If Node 18+, you can remove this
 
 const API_KEY = process.env.DEEPSEEK_API_KEY;
 
@@ -8,6 +8,7 @@ const diff = fs.readFileSync("pr.diff", "utf8");
 const routes = JSON.parse(fs.readFileSync("routes.json", "utf8"));
 const deps = JSON.parse(fs.readFileSync("deps.json", "utf8"));
 
+// Prepare prompt
 const prompt = `
 You are an AI code analysis agent.
 
@@ -27,7 +28,6 @@ Task:
    - Mermaid diagram showing dependencies
 `;
 
-// Send request to DeepSeek via OpenRouter
 (async () => {
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -43,9 +43,20 @@ Task:
     });
 
     const data = await response.json();
-    const output = data.choices?.[0]?.message?.content || "No analysis";
+    console.log("Raw API response:", JSON.stringify(data, null, 2));
+
+    // Handle possible DeepSeek response formats
+    let output = "No analysis";
+    if (data.choices && data.choices[0]) {
+      if (data.choices[0].message && data.choices[0].message.content) {
+        output = data.choices[0].message.content;
+      } else if (data.choices[0].content) {
+        output = data.choices[0].content;
+      }
+    }
+
     fs.writeFileSync("impact.md", output);
-    console.log(output);
+    console.log("Analysis written to impact.md:\n", output);
   } catch (err) {
     console.error("Error calling DeepSeek API:", err);
     fs.writeFileSync("impact.md", "⚠️ DeepSeek API failed. Analysis skipped.");
