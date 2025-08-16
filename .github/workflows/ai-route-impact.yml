@@ -1,4 +1,4 @@
-name: AI Route Impact Agent
+name: AI Route Impact Agent (DeepSeek)
 
 on:
   pull_request:
@@ -12,44 +12,35 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-      # 1️⃣ Checkout full repo
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
-        run: npm install madge glob openai
+        run: npm install madge glob node-fetch
 
-      # 4️⃣ Extract routes and dependency graph
       - name: Extract routes & deps
         run: node scripts/analyzeRoutes.js
 
-      # 5️⃣ Get PR diff
       - name: Get PR diff
         run: git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} > pr.diff
 
-      # 6️⃣ Debug PR diff
       - name: Show PR diff
         run: cat pr.diff
 
-      # 7️⃣ Run AI agent
-      - name: Run AI agent
-        run: node scripts/aiAgent.js
+      - name: Run AI agent (DeepSeek)
+        run: node scripts/aiAgentDeepSeek.js
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
 
-      # 8️⃣ Debug AI output
       - name: Show impact.md
         run: cat impact.md
 
-      # 9️⃣ Post comment on PR
       - name: Post PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
