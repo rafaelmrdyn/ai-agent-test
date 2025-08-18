@@ -1,3 +1,5 @@
+const test = require('./test');
+
 // In-memory storage for todos (in a real app, you'd use a database)
 let todos = [
   {
@@ -31,7 +33,8 @@ const createTodo = (todoData) => {
     title: title.trim(),
     description: description ? description.trim() : '',
     completed: false,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    test: test.test()
   };
   
   todos.push(newTodo);

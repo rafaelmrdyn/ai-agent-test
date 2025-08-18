@@ -112,14 +112,24 @@ jobs:
               // Extract Mermaid diagram from response
               if (content.includes('flowchart')) {
                 const mermaidStart = content.indexOf('flowchart');
-                // Find the end of the Mermaid block by looking for the closing ```
-                const mermaidEnd = content.indexOf('```', mermaidStart + 3);
-                if (mermaidEnd === -1) {
-                  // If no closing ```, use last }
-                  const lastBrace = content.lastIndexOf('}');
-                  diagram = content.substring(mermaidStart, lastBrace + 1);
+                // If the content starts with flowchart, it's likely the whole response is the diagram
+                if (mermaidStart === 0 || content.trim().startsWith('flowchart')) {
+                  diagram = content.trim();
                 } else {
-                  diagram = content.substring(mermaidStart, mermaidEnd);
+                  // Find the end of the Mermaid block by looking for the closing ```
+                  const mermaidEnd = content.indexOf('```', mermaidStart + 3);
+                  if (mermaidEnd === -1) {
+                    // If no closing ```, use last }
+                    const lastBrace = content.lastIndexOf('}');
+                    if (lastBrace > mermaidStart) {
+                      diagram = content.substring(mermaidStart, lastBrace + 1);
+                    } else {
+                      // If no closing brace found, take the whole content from flowchart onwards
+                      diagram = content.substring(mermaidStart);
+                    }
+                  } else {
+                    diagram = content.substring(mermaidStart, mermaidEnd);
+                  }
                 }
                 console.log("Extracted diagram length:", diagram.length);
                 console.log("Diagram starts with:", diagram.substring(0, 50));
