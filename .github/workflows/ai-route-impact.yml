@@ -78,7 +78,7 @@ jobs:
               "",
               "IMPORTANT: Only include routes that are actually impacted by the changed functions.",
               "Do NOT include any routes that don't use the changed functions.",
-              "Focus only on the affected routes and functions."
+              "Focus only on the affected routes and functions.",
               "",
               "OUTPUT: Generate ONLY a Mermaid flowchart starting with 'flowchart TD'",
               "Use simple node IDs (no spaces or special chars) and clear relationships.",
