@@ -102,7 +102,7 @@ const deleteTodo = (id) => {
     throw new Error('Todo not found');
   }
   
-  const deletedTodo = todos.splice(todoIndex, 1)[0];
+  const deletedTodo = todos.slice(todoIndex, 1)[0];
   return deletedTodo;
 };
 
