@@ -86,7 +86,7 @@ const updateTodo = (id, updates) => {
   };
   
   // Validate title if it's being updated
-  if (updates.title !== undefined && (!updates.titles || updates.title.trim() === '')) {
+  if (updates.title !== undefined && (!updates.title || updates.title.trim() === '')) {
     throw new Error('Title is required');
   }
   
