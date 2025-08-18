@@ -55,7 +55,7 @@ jobs:
             console.log("Routes content length:", codeToAnalyze.length);
             
             const prompt = [
-              "You are an AI code analysis agent. Analyze the git diff and routes to identify impacts.",
+              "You are an AI code analysis agent. Analyze the git diff and routes to identify function-level impacts.",
               "",
               "GIT DIFF (changes made):",
               "```",
@@ -68,14 +68,14 @@ jobs:
               "```",
               "",
               "INSTRUCTIONS:",
-              "1. Look at the git diff to see what files were changed",
-              "2. Look at the routes to see what endpoints exist",
-              "3. Identify which routes might be affected by the changes",
+              "1. Analyze the git diff to identify SPECIFIC FUNCTIONS that were changed",
+              "2. Look at the routes code to see what endpoints exist and what functions they call",
+              "3. For each changed function, identify which routes use/call that function",
               "4. Create a Mermaid flowchart showing:",
-              "   - Changed files (red nodes)",
-              "   - Routes that might be impacted (orange nodes)", 
-              "   - Other routes (blue nodes)",
-              "   - Dependencies between them",
+              "   - Changed functions (red nodes) - show exact function names like 'updateTodo()'",
+              "   - Routes that use those specific functions (orange nodes)",
+              "   - Routes that don't use the changed functions (blue nodes)",
+              "   - Clear connections showing which routes depend on which functions",
               "",
               "OUTPUT: Generate ONLY a Mermaid flowchart starting with 'flowchart TD'",
               "Use simple node IDs and clear relationships."
