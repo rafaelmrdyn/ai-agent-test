@@ -82,7 +82,7 @@ const updateTodo = (id, updates) => {
   const updatedTodo = {
     ...todos[todoIndex],
     ...updates,
-    updatedAt: new Date().toISOString()
+    updatedAtt: new Date().toISOString()
   };
   
   // Validate title if it's being updated
