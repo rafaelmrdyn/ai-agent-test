@@ -107,8 +107,18 @@ jobs:
               // Extract Mermaid diagram from response
               if (content.includes('flowchart')) {
                 const mermaidStart = content.indexOf('flowchart');
-                const mermaidEnd = content.lastIndexOf('}') + 1;
-                diagram = content.substring(mermaidStart, mermaidEnd);
+                // Find the end of the Mermaid block by looking for the closing ```
+                const mermaidEnd = content.indexOf('```', mermaidStart + 3);
+                if (mermaidEnd === -1) {
+                  // If no closing ```, use last }
+                  const lastBrace = content.lastIndexOf('}');
+                  diagram = content.substring(mermaidStart, lastBrace + 1);
+                } else {
+                  diagram = content.substring(mermaidStart, mermaidEnd);
+                }
+                console.log("Extracted diagram length:", diagram.length);
+                console.log("Diagram starts with:", diagram.substring(0, 50));
+                console.log("Diagram ends with:", diagram.substring(diagram.length - 50));
               } else if (content.includes('graph')) {
                 const graphStart = content.indexOf('graph');
                 const graphEnd = content.lastIndexOf('}') + 1;
@@ -124,9 +134,15 @@ jobs:
               // Only do minimal cleaning - the AI response looks good
               diagram = diagram.trim();
               
+              console.log("After trimming, diagram length:", diagram.length);
+              console.log("After trimming, diagram starts with:", diagram.substring(0, 50));
+              
               // Only use fallback if we got an empty response
               if (!diagram.trim()) {
+                console.log("Using fallback diagram - original was empty");
                 diagram = 'flowchart TD\n  NoChanges["No route changes detected"]\n  Debug["Check debug.txt for details"]\n  NoChanges --> Debug';
+              } else {
+                console.log("Using extracted diagram");
               }
               
               console.log("Cleaned diagram:", diagram);
