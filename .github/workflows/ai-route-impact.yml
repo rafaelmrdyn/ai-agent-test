@@ -121,15 +121,11 @@ jobs:
               // Clean up the diagram
               diagram = diagram.replace(/```mermaid\s*/g, '').replace(/```\s*$/g, '');
               
-              // Fix common Mermaid syntax issues
-              diagram = diagram
-                .replace(/\/\s*"\s*\n\s*([^"]+)\s*\n\s*"\s*\//g, '["$1"]') // Fix multi-line text in nodes
-                .replace(/\[\[([^\]]+)\]\]/g, '["$1"]') // Fix double brackets
-                .replace(/\/\s*"([^"]+)"\s*\//g, '["$1"]') // Fix slash-wrapped text
-                .replace(/\s*\/\s*$/gm, ''); // Remove trailing slashes
+              // Only do minimal cleaning - the AI response looks good
+              diagram = diagram.trim();
               
-              // Only use fallback if we got an empty or invalid response
-              if (!diagram.trim() || diagram.trim() === 'flowchart TD') {
+              // Only use fallback if we got an empty response
+              if (!diagram.trim()) {
                 diagram = 'flowchart TD\n  NoChanges["No route changes detected"]\n  Debug["Check debug.txt for details"]\n  NoChanges --> Debug';
               }
               
