@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # fetch full history
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -41,19 +41,16 @@ jobs:
             }
 
             const prompt = [
-              "You are a software architect and code visualization AI.",
+              "You are an AI code reviewer generating diagrams.",
               "",
-              "Analyze the following Node.js Express repository changes and produce a **valid Mermaid flowchart only** that shows:",
-              "",
-              "1. Express routes (GET, POST, PUT, DELETE) with full paths.",
-              "2. All functions each route calls, including nested and imported ones.",
-              "3. Middleware used by routes.",
-              "4. Only show functions affected by the code changes.",
-              "",
-              "Even if there are no detected changes to routes, produce a valid Mermaid flowchart with a placeholder node:",
-              "",
-              "flowchart TD",
-              '  NoChanges["No route changes detected"]',
+              "Produce a valid **Mermaid flowchart** (flowchart TD) **only**:",
+              "- Routes should be colored blue.",
+              "- Functions should be colored green.",
+              "- If no routes are changed, output a placeholder node:",
+              "    flowchart TD",
+              "      NoChanges[\"No route changes detected\"]",
+              "- Do not include any text explanations.",
+              "- Only output Mermaid syntax.",
               "",
               "Git diff:",
               `${diff}`
@@ -66,7 +63,7 @@ jobs:
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
-                model: "deepseek-r1",   // DeepSeek model
+                model: "deepseek-r1",
                 messages: [
                   { role: "system", content: "You are an AI code reviewer generating Mermaid diagrams." },
                   { role: "user", content: prompt }
@@ -75,13 +72,14 @@ jobs:
             });
 
             const data = await response.json();
-            if (data.error) {
-              fs.writeFileSync("impact.md", `❌ DeepSeek API error: ${data.error.message}`);
-              return;
+
+            let diagram = "flowchart TD\n  NoChanges[\"No route changes detected\"]"; // fallback
+
+            if (!data.error && data.choices?.[0]?.message?.content) {
+              diagram = data.choices[0].message.content;
             }
 
-            let diagram = data.choices?.[0]?.message?.content || "flowchart TD\n  NoChanges[\"No route changes detected\"]";
-            // Wrap in mermaid markdown block for GitHub rendering
+            // Wrap in mermaid block for GitHub rendering
             diagram = "```mermaid\n" + diagram + "\n```";
             fs.writeFileSync("impact.md", diagram);
             console.log("✅ Mermaid diagram written to impact.md");
