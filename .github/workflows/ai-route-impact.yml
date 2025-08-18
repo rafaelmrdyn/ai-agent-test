@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 18
 
-      - name: Generate route dependency diagram
+      - name: Generate full route dependency diagram
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
@@ -30,36 +30,39 @@ jobs:
           const fs = require('fs');
           const fetch = require('node-fetch');
           const { execSync } = require('child_process');
+          const path = require('path');
+
+          function getAllRoutes() {
+            try {
+              // Adjust the path if your routes/controllers are elsewhere
+              const routesPath = path.join(process.cwd(), 'routes');
+              return execSync(`cat ${routesPath}/*.js`).toString();
+            } catch (e) {
+              return "// Could not read routes folder";
+            }
+          }
 
           async function run() {
-            let diff = "";
-            try {
-              diff = execSync('git fetch origin main && git diff origin/main...HEAD').toString();
-            } catch (e) {
-              console.warn("Git diff failed, using HEAD^ fallback");
-              try { diff = execSync('git diff HEAD^').toString(); } catch (e2) { console.error(e2); }
-            }
+            let codeToAnalyze = getAllRoutes();
 
             const prompt = [
               "You are an AI code reviewer generating diagrams.",
               "",
-              "Produce a valid **Mermaid flowchart** (flowchart TD) **only**:",
+              "Analyze the following Node.js Express repository routes and produce a **valid Mermaid flowchart** (flowchart TD) **only**:",
               "- Routes should be colored blue.",
               "- Functions should be colored green.",
-              "- If no routes are changed, output a placeholder node:",
-              "    flowchart TD",
-              "      NoChanges[\"No route changes detected\"]",
-              "- Do not include any text explanations.",
-              "- Only output Mermaid syntax.",
+              "- Show middleware for routes.",
+              "- Highlight which functions are called by each route.",
+              "- Only output Mermaid syntax, no text explanations.",
               "",
-              "Git diff:",
-              `${diff}`
+              "Routes and controllers code:",
+              `${codeToAnalyze}`
             ].join('\n');
 
-            const response = await fetch("https://api.deepseek.com/chat/completions", {
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
               method: "POST",
               headers: {
-                "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+                "Authorization": "Bearer " + process.env.DEEPSEEK_API_KEY,
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
