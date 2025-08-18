@@ -35,7 +35,7 @@ jobs:
           function getAllRoutes() {
             try {
               // Adjust the path if your routes/controllers are elsewhere
-              const routesPath = path.join(process.cwd(), 'routes');
+              const routesPath = path.join(process.cwd(), 'src/router');
               return execSync(`cat ${routesPath}/*.js`).toString();
             } catch (e) {
               return "// Could not read routes folder";
@@ -44,6 +44,14 @@ jobs:
 
           async function run() {
             let codeToAnalyze = getAllRoutes();
+            
+            // Get git diff for the PR
+            let diff = '';
+            try {
+              diff = execSync('git diff origin/main...HEAD').toString();
+            } catch (e) {
+              diff = '// Could not get git diff';
+            }
 
             const prompt = [
               "You are an AI code analysis agent.",
@@ -52,16 +60,16 @@ jobs:
               `${diff}`,
               "",
               "Express routes:",
-              `${JSON.stringify(routes, null, 2)}`,
-              "",
-              "Dependency graph:",
-              `${JSON.stringify(deps, null, 2)}`,
+              `${codeToAnalyze}`,
               "",
               "Task:",
               "1. Identify which routes might be impacted by the changed code.",
-              "2. Output a Markdown report with:",
-              "   - List of impacted routes",
-              "   - Mermaid diagram showing dependencies"
+              "2. Output a Mermaid flowchart diagram showing:",
+              "   - Changed files (in red)",
+              "   - Routes that might be impacted (in orange)",
+              "   - Dependencies between them",
+              "3. Use clear, descriptive node names",
+              "4. Focus on the most relevant connections"
             ].join('\n');
 
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
