@@ -2,17 +2,16 @@ name: AI Code Analysis
 
 on:
   pull_request:
-    branches:
-      - main
+    types: [opened, synchronize, reopened]
 
 jobs:
-  analyze:
+  ai-analysis:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -21,16 +20,22 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
+          # Write temporary script
           cat > aiAnalysis.js <<'EOF'
-          import fs from 'fs';
-          import fetch from 'node-fetch';
-          import { execSync } from 'child_process';
+          const fs = require('fs');
+          const fetch = require('node-fetch');
+          const { execSync } = require('child_process');
 
           async function run() {
-            const diff = execSync('git diff origin/main...HEAD').toString();
+            let diff = "";
+            try {
+              diff = execSync('git diff origin/main...HEAD').toString();
+            } catch (e) {
+              console.error("Git diff error:", e);
+            }
 
             if (!diff.trim()) {
-              console.log("No changes detected.");
+              console.log("⚠️ No changes detected.");
               return;
             }
 
@@ -43,7 +48,7 @@ jobs:
               body: JSON.stringify({
                 model: "deepseek-chat",
                 messages: [
-                  { role: "system", content: "You are an AI code reviewer. Analyze changes in the diff and explain their impact." },
+                  { role: "system", content: "You are an AI code reviewer. Analyze the git diff and explain its impact clearly." },
                   { role: "user", content: diff }
                 ]
               })
@@ -51,7 +56,7 @@ jobs:
 
             const data = await response.json();
             if (data.error) {
-              console.error("DeepSeek API error:", data.error);
+              console.error("❌ DeepSeek API error:", data.error);
               return;
             }
 
@@ -66,10 +71,18 @@ jobs:
           });
           EOF
 
+          npm install node-fetch@2
           node aiAnalysis.js
 
-      - name: Upload impact.md
+      - name: Upload impact.md artifact
         uses: actions/upload-artifact@v4
         with:
           name: ai-analysis
+          path: impact.md
+
+      - name: Comment AI analysis on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: ai-analysis
           path: impact.md
