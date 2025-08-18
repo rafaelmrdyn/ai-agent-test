@@ -50,6 +50,30 @@ jobs:
               return;
             }
 
+            const prompt = [
+              "You are an expert software architect and code analysis AI.",
+              "",
+              "Given the following Git diff from a Node.js Express repository, analyze the changes and output a dependency diagram in Mermaid format.",
+              "",
+              "Requirements:",
+              "1. List all Express routes (GET, POST, PUT, DELETE) with their full paths that are affected by the code changes.",
+              "2. For each affected route, show all functions it calls (including nested calls and imported functions).",
+              "3. Show relationships between functions (which function calls which).",
+              "4. Optionally, indicate any middleware applied to each route.",
+              "",
+              "Format your output as a Mermaid flowchart, for example:",
+              "",
+              "flowchart TD",
+              '  Route1["GET /users"] --> FunctionA',
+              "  FunctionA --> FunctionB",
+              '  Route2["POST /login"] --> AuthMiddleware',
+              "  AuthMiddleware --> FunctionC",
+              "",
+              "Only include routes and functions that are directly or indirectly impacted by the following code changes:",
+              "",
+              `${diff}`
+            ].join('\n');
+
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
               method: "POST",
               headers: {
@@ -59,7 +83,7 @@ jobs:
               body: JSON.stringify({
                 model: "deepseek/deepseek-r1:free",
                 messages: [
-                  { role: "system", content: "You are an AI code reviewer. Analyze the git diff and explain its impact clearly." },
+                  { role: "system", content: prompt },
                   { role: "user", content: diff }
                 ]
               })
