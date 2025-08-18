@@ -72,8 +72,8 @@ jobs:
               "2. Look at the routes code to see what endpoints exist and what functions they call",
               "3. For each changed function, identify which routes use/call that function",
               "4. Create a Mermaid flowchart showing ONLY:",
-              "   - Changed functions (red nodes) - show exact function names like 'updateTodo()'",
-              "   - Routes that use those specific functions (orange nodes)",
+              "   - Changed functions (dark red nodes) - show exact function names like 'updateTodo()'",
+              "   - Routes that use those specific functions (dark orange nodes)",
               "   - Clear connections showing which routes depend on which functions",
               "",
               "IMPORTANT: Only include routes that are actually impacted by the changed functions.",
@@ -83,7 +83,7 @@ jobs:
               "OUTPUT: Generate ONLY a Mermaid flowchart starting with 'flowchart TD'",
               "Use simple node IDs (no spaces or special chars) and clear relationships.",
               "Example node format: updateTodo[\"updateTodo()\"]",
-              "Example style: style updateTodo fill:#ffcccc"
+              "Example style: style updateTodo fill:#d32f2f,stroke:#b71c1c,color:#ffffff"
             ].join('\n');
 
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -103,7 +103,7 @@ jobs:
 
             const data = await response.json();
 
-            let diagram = 'flowchart TD\n  ChangedFiles["Changed Files"]\n  Routes["Routes"]\n  ChangedFiles --> Routes\n  style ChangedFiles fill:#ffcccc\n  style Routes fill:#cce5ff';
+            let diagram = 'flowchart TD\n  ChangedFiles["Changed Files"]\n  Routes["Routes"]\n  ChangedFiles --> Routes\n  style ChangedFiles fill:#d32f2f,stroke:#b71c1c,color:#ffffff\n  style Routes fill:#1976d2,stroke:#1565c0,color:#ffffff';
 
             if (!data.error && data.choices?.[0]?.message?.content) {
               let content = data.choices[0].message.content;
