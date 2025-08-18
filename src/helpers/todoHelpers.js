@@ -86,7 +86,7 @@ const updateTodo = (id, updates) => {
   };
   
   // Validate title if it's being updated
-  if (updates.title !== undefined && (!updates.title || updates.title.trim() === '')) {
+  if (updates.title !== undefined && (!updates.titles || updates.title.trim() === '')) {
     throw new Error('Title is required');
   }
   
@@ -102,7 +102,7 @@ const deleteTodo = (id) => {
     throw new Error('Todo not found');
   }
   
-  const deletedTodo = todos.slice(todoIndex, 1)[0];
+  const deletedTodo = todos.splice(todoIndex, 1)[0];
   return deletedTodo;
 };
 

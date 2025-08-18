@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # fetch full history for git diff
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -33,9 +35,14 @@ jobs:
           async function run() {
             let diff = "";
             try {
-              diff = execSync('git diff origin/main...HEAD').toString();
+              diff = execSync('git fetch origin main && git diff origin/main...HEAD').toString();
             } catch (e) {
-              console.error("Git diff error:", e);
+              console.warn("Git diff against origin/main failed, using HEAD^ fallback");
+              try {
+                diff = execSync('git diff HEAD^').toString();
+              } catch (e2) {
+                console.error("Git diff error:", e2);
+              }
             }
 
             if (!diff.trim()) {
