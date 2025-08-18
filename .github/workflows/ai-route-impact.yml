@@ -1,4 +1,8 @@
-name: AI Agent DeepSeek Analysis
+name: AI Code Analysis
+
+permissions:
+  pull-requests: write
+  contents: read
 
 on:
   pull_request:
@@ -7,95 +11,82 @@ on:
 jobs:
   ai-analysis:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Get PR diff
-        run: |
-          git fetch origin main
-          git diff origin/main...HEAD > pr.diff
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-      - name: Run AI agent with DeepSeek
-        run: |
-          node -e "
-          const fs = require('fs');
-          const fetch = require('node-fetch');
-
-          const API_KEY = process.env.DEEPSEEK_API_KEY;
-          const diff = fs.readFileSync('pr.diff','utf8');
-          const routes = fs.existsSync('routes.json') ? JSON.parse(fs.readFileSync('routes.json','utf8')) : {};
-          const deps = fs.existsSync('deps.json') ? JSON.parse(fs.readFileSync('deps.json','utf8')) : {};
-
-          const prompt = \`
-You are an AI code analysis agent.
-Generate a **Markdown report** for GitHub PR comments.
-
-Data provided:
-- Git diff
-- API routes (routes.json)
-- Dependencies (deps.json)
-
-### Instructions:
-1. Detect which **routes are impacted** by the changes in the diff (e.g., PUT /users).
-2. Show a dependency + route diagram in **Mermaid** combining:
-   - API routes as entry points
-   - Dependencies they touch
-3. Use **pastel colors** for readability:
-   - Routes: light blue (#bbf)
-   - Services/DB: light green (#bfb)
-   - External deps: light pink (#f9f)
-4. Example:
-   \`\`\`mermaid
-   graph TD
-   route_users[PUT /users] --> service_users[UserService]
-   service_users --> db_users[(users table)]
-   style route_users fill:#bbf,stroke:#333,stroke-width:2px
-   style service_users fill:#bfb,stroke:#333,stroke-width:2px
-   style db_users fill:#f9f,stroke:#333,stroke-width:2px
-   \`\`\`
-
-Git diff:
-\${diff}
-
-Routes.json:
-\${JSON.stringify(routes,null,2)}
-
-Deps.json:
-\${JSON.stringify(deps,null,2)}
-\`;
-
-          (async()=>{
-            try {
-              const res = await fetch('https://openrouter.ai/api/v1/chat/completions',{
-                method:'POST',
-                headers:{
-                  'Content-Type':'application/json',
-                  'Authorization':\`Bearer \${API_KEY}\`
-                },
-                body:JSON.stringify({
-                  model:'deepseek/deepseek-r1:free',
-                  messages:[{role:'user',content:prompt}]
-                })
-              });
-
-              const data = await res.json();
-              let output='No analysis';
-              if(data.choices?.[0]?.message?.content){
-                output=data.choices[0].message.content;
-              }
-              fs.writeFileSync('impact.md',output);
-              console.log('✅ Analysis written to impact.md');
-            } catch (err) {
-              console.error('❌ Error calling DeepSeek API:', err);
-            }
-          })();
-          "
+      - name: Run AI analysis with DeepSeek
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          # Write temporary AI script
+          cat > aiAnalysis.js <<'EOF'
+          const fs = require('fs');
+          const fetch = require('node-fetch');
+          const { execSync } = require('child_process');
 
-      - name: Post PR Comment with Analysis
+          async function run() {
+            let diff = "";
+            try {
+              diff = execSync('git diff origin/main...HEAD').toString();
+            } catch (e) {
+              console.error("Git diff error:", e);
+            }
+
+            if (!diff.trim()) {
+              fs.writeFileSync("impact.md", "⚠️ No changes detected in this PR.");
+              return;
+            }
+
+            const response = await fetch("https://api.deepseek.com/chat/completions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                model: "deepseek-chat",
+                messages: [
+                  { role: "system", content: "You are an AI code reviewer. Analyze the git diff and explain its impact clearly." },
+                  { role: "user", content: diff }
+                ]
+              })
+            });
+
+            const data = await response.json();
+            if (data.error) {
+              fs.writeFileSync("impact.md", `❌ DeepSeek API error: ${data.error.message || JSON.stringify(data.error)}`);
+              return;
+            }
+
+            const analysis = data.choices?.[0]?.message?.content || "No analysis generated.";
+            fs.writeFileSync("impact.md", analysis);
+            console.log("✅ Analysis written to impact.md");
+          }
+
+          run().catch(err => {
+            fs.writeFileSync("impact.md", `❌ Error running AI analysis: ${err.message}`);
+            process.exit(1);
+          });
+          EOF
+
+          npm install node-fetch@2
+          node aiAnalysis.js
+
+      - name: Upload impact.md artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-analysis
+          path: impact.md
+
+      - name: Comment AI analysis on PR
+        if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          header: ai-analysis
           path: impact.md
