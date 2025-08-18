@@ -22,11 +22,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: Generate full route dependency diagram
+      - name: Generate route dependency diagram
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
-          cat > aiDiagram.js <<'EOF'
+          cat > aiDiagram.js << 'EOF'
           const fs = require('fs');
           const fetch = require('node-fetch');
           const { execSync } = require('child_process');
@@ -34,7 +34,6 @@ jobs:
 
           function getAllRoutes() {
             try {
-              // Adjust the path if your routes/controllers are elsewhere
               const routesPath = path.join(process.cwd(), 'src/router');
               return execSync(`cat ${routesPath}/*.js`).toString();
             } catch (e) {
@@ -45,7 +44,6 @@ jobs:
           async function run() {
             let codeToAnalyze = getAllRoutes();
             
-            // Get git diff for the PR
             let diff = '';
             try {
               diff = execSync('git diff origin/main...HEAD').toString();
@@ -92,12 +90,11 @@ jobs:
 
             const data = await response.json();
 
-            let diagram = "flowchart TD\n  NoChanges[\"No route changes detected\"]"; // fallback
+            let diagram = 'flowchart TD\n  ChangedFiles["Changed Files"]\n  Routes["Routes"]\n  ChangedFiles --> Routes\n  style ChangedFiles fill:#ffcccc\n  style Routes fill:#cce5ff';
 
             if (!data.error && data.choices?.[0]?.message?.content) {
               let content = data.choices[0].message.content;
               
-              // Extract only the Mermaid diagram part
               if (content.includes('flowchart')) {
                 const mermaidStart = content.indexOf('flowchart');
                 const mermaidEnd = content.lastIndexOf('}') + 1;
@@ -106,22 +103,33 @@ jobs:
                 diagram = content;
               }
               
-              // Clean up the diagram
               diagram = diagram.replace(/```mermaid\s*/g, '').replace(/```\s*$/g, '');
+              
+              if (!diagram.trim() || diagram.trim() === 'flowchart TD') {
+                diagram = 'flowchart TD\n  NoChanges["No route changes detected"]';
+              }
             }
 
             if (data.error) {
-              diagram = "flowchart TD\n  Error[\"❌ DeepSeek API error: " + data.error.message + "\"]";
+              diagram = 'flowchart TD\n  Error["❌ DeepSeek API error: ' + data.error.message + '"]';
             }
 
-            // Wrap in mermaid block for GitHub rendering
             diagram = "```mermaid\n" + diagram + "\n```";
+            
+            fs.writeFileSync("debug.txt", JSON.stringify({
+              apiResponse: data,
+              extractedDiagram: diagram,
+              routes: codeToAnalyze,
+              diff: diff
+            }, null, 2));
+            
             fs.writeFileSync("impact.md", diagram);
             console.log("✅ Mermaid diagram written to impact.md");
+            console.log("📝 Debug info written to debug.txt");
           }
 
           run().catch(err => {
-            fs.writeFileSync("impact.md", `❌ Error running AI diagram: ${err.message}`);
+            fs.writeFileSync("impact.md", "❌ Error running AI diagram: " + err.message);
             process.exit(1);
           });
           EOF
