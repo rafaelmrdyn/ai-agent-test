@@ -65,6 +65,8 @@ jobs:
 
             console.log("Git diff length:", diff.length);
             console.log("Project code length:", projectCode.length);
+            console.log("Git diff preview:", diff.substring(0, 200));
+            console.log("Project code preview:", projectCode.substring(0, 500));
             
             const prompt = [
               "You are an AI code analysis agent. Analyze the git diff and routes to identify function-level impacts.",
@@ -83,9 +85,10 @@ jobs:
               "1. Analyze the git diff to identify SPECIFIC FUNCTIONS that were changed",
               "2. Look at the project code to understand the structure and dependencies",
               "3. For each changed function, trace the complete dependency chain:",
-              "   - Check which files import the changed function",
-              "   - Check which functions use the changed function",
+              "   - Look for require() or import statements that reference the changed function",
+              "   - Check which functions call the changed function",
               "   - Check which routes/endpoints use those functions",
+              "   - Pay special attention to module.exports and require() patterns",
               "4. Create a Mermaid flowchart showing ONLY:",
               "   - Changed functions (dark red nodes) - show exact function names like 'functionName()'",
               "   - Routes that use those specific functions (dark orange nodes)",
@@ -101,6 +104,12 @@ jobs:
               "EXAMPLE DEPENDENCY CHAIN:",
               "changedFunction() → helperFile.js imports changedFunction → helperFunction() uses changedFunction() → route/endpoint uses helperFunction()",
               "Result: Show changedFunction() → helperFunction() → route/endpoint",
+              "",
+              "ANALYSIS TIPS:",
+              "- Look for 'const moduleName = require(\"./moduleName\")' patterns",
+              "- Look for 'moduleName.functionName()' function calls",
+              "- Look for 'module.exports = { functionName }' patterns",
+              "- Trace from changed function → importing file → using function → route",
               "",
               "OUTPUT: Generate ONLY a Mermaid flowchart starting with 'flowchart TD'",
               "Use simple node IDs (no spaces or special chars) and clear relationships.",
