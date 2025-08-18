@@ -32,17 +32,29 @@ jobs:
           const { execSync } = require('child_process');
           const path = require('path');
 
-          function getAllRoutes() {
+          function getAllProjectFiles() {
             try {
-              const routesPath = path.join(process.cwd(), 'src/router');
-              return execSync(`cat ${routesPath}/*.js`).toString();
+              // Find all JavaScript files in the project
+              const result = execSync('find . -name "*.js" -not -path "./node_modules/*" -not -path "./.git/*"').toString();
+              const files = result.trim().split('\n').filter(f => f);
+              
+              let allCode = '';
+              for (const file of files) {
+                try {
+                  const content = execSync(`cat "${file}"`).toString();
+                  allCode += `\n// File: ${file}\n${content}\n`;
+                } catch (e) {
+                  console.log(`Could not read file: ${file}`);
+                }
+              }
+              return allCode;
             } catch (e) {
-              return "// Could not read routes folder";
+              return "// Could not read project files";
             }
           }
 
           async function run() {
-            let codeToAnalyze = getAllRoutes();
+            let projectCode = getAllProjectFiles();
             
             let diff = '';
             try {
@@ -52,7 +64,9 @@ jobs:
             }
 
             console.log("Git diff length:", diff.length);
-            console.log("Routes content length:", codeToAnalyze.length);
+            console.log("Project code length:", projectCode.length);
+            console.log("Git diff preview:", diff.substring(0, 200));
+            console.log("Project code preview:", projectCode.substring(0, 500));
             
             const prompt = [
               "You are an AI code analysis agent. Analyze the git diff and routes to identify function-level impacts.",
@@ -62,17 +76,21 @@ jobs:
               diff,
               "```",
               "",
-              "EXPRESS ROUTES (current routes):",
+              "PROJECT CODE (all JavaScript files):",
               "```",
-              codeToAnalyze,
+              projectCode,
               "```",
               "",
               "INSTRUCTIONS:",
               "1. Analyze the git diff to identify SPECIFIC FUNCTIONS that were changed",
-              "2. Look at the routes code to see what endpoints exist and what functions they call",
-              "3. For each changed function, identify which routes use/call that function",
+              "2. Look at the project code to understand the structure and dependencies",
+              "3. For each changed function, trace the complete dependency chain:",
+              "   - Look for require() or import statements that reference the changed function",
+              "   - Check which functions call the changed function",
+              "   - Check which routes/endpoints use those functions",
+              "   - Pay special attention to module.exports and require() patterns",
               "4. Create a Mermaid flowchart showing ONLY:",
-              "   - Changed functions (dark red nodes) - show exact function names like 'updateTodo()'",
+              "   - Changed functions (dark red nodes) - show exact function names like 'functionName()'",
               "   - Routes that use those specific functions (dark orange nodes)",
               "   - Clear connections showing which routes depend on which functions",
               "",
@@ -80,13 +98,32 @@ jobs:
               "- Always show changed functions, even if no routes use them directly",
               "- Show ONLY the specific routes that actually use the changed functions (directly or indirectly)",
               "- If a helper function is changed, trace which specific routes use the functions that depend on it",
-              "- Be precise: if test() is only used in createTodo(), and createTodo() is only used by POST /api/todos, show only that route",
+              "- Be precise: if changedFunction() is only used in helperFunction(), and helperFunction() is only used by specific route, show only that route",
               "- Do NOT show routes that don't use the changed functions or functions that depend on them",
+              "",
+              "EXAMPLE DEPENDENCY CHAIN:",
+              "changedFunction() → helperFile.js imports changedFunction → helperFunction() uses changedFunction() → route/endpoint uses helperFunction()",
+              "Result: Show changedFunction() → helperFunction() → route/endpoint",
+              "",
+              "ANALYSIS TIPS:",
+              "- Look for 'const moduleName = require(\"./moduleName\")' patterns",
+              "- Look for 'moduleName.functionName()' function calls",
+              "- Look for 'module.exports = { functionName }' patterns",
+              "- Trace from changed function → importing file → using function → route",
               "",
               "OUTPUT: Generate ONLY a Mermaid flowchart starting with 'flowchart TD'",
               "Use simple node IDs (no spaces or special chars) and clear relationships.",
-              "Example node format: updateTodo[\"updateTodo()\"]",
-              "Example style: style updateTodo fill:#d32f2f,stroke:#b71c1c,color:#ffffff"
+              "Example node format: functionName[\"functionName()\"]",
+              "Example style: style functionName fill:#d32f2f,stroke:#b71c1c,color:#ffffff",
+              "",
+              "CRITICAL: Always output a Mermaid diagram, even if no routes are affected.",
+              "If no routes use the changed functions, show:",
+              "flowchart TD",
+              "  ChangedFunction[\"functionName()\"]",
+              "  Note[\"No routes currently use this function\"]",
+              "  ChangedFunction --> Note",
+              "  style ChangedFunction fill:#d32f2f,stroke:#b71c1c,color:#ffffff",
+              "  style Note fill:#f5f5f5,stroke:#666666"
             ].join('\n');
 
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -106,7 +143,7 @@ jobs:
 
             const data = await response.json();
 
-            let diagram = 'flowchart TD\n  ChangedFiles["Changed Files"]\n  Routes["Routes"]\n  ChangedFiles --> Routes\n  style ChangedFiles fill:#d32f2f,stroke:#b71c1c,color:#ffffff\n  style Routes fill:#1976d2,stroke:#1565c0,color:#ffffff';
+            let diagram = 'flowchart TD\n  ChangedFunctions["Changed Functions"]\n  AffectedRoutes["Affected Routes"]\n  ChangedFunctions --> AffectedRoutes\n  style ChangedFunctions fill:#d32f2f,stroke:#b71c1c,color:#ffffff\n  style AffectedRoutes fill:#1976d2,stroke:#1565c0,color:#ffffff';
 
             if (!data.error && data.choices?.[0]?.message?.content) {
               let content = data.choices[0].message.content;
@@ -143,7 +180,25 @@ jobs:
                 diagram = content.substring(graphStart, graphEnd);
               } else {
                 // If no diagram found, create a simple one based on the content
-                diagram = 'flowchart TD\n  Analysis["AI Analysis"]\n  Content["' + content.substring(0, 100).replace(/"/g, '\\"') + '..."]\n  Analysis --> Content';
+                // Check if the content mentions specific functions
+                const functionMatches = content.match(/(\w+)\(\)/g);
+                if (functionMatches) {
+                  const functions = [...new Set(functionMatches)];
+                  diagram = 'flowchart TD\n';
+                  functions.forEach(func => {
+                    diagram += `  ${func.replace(/[()]/g, '')}["${func}"]\n`;
+                  });
+                  diagram += '  Note["No routes currently use these functions"]\n';
+                  functions.forEach(func => {
+                    diagram += `  ${func.replace(/[()]/g, '')} --> Note\n`;
+                  });
+                  diagram += '  style Note fill:#f5f5f5,stroke:#666666\n';
+                  functions.forEach(func => {
+                    diagram += `  style ${func.replace(/[()]/g, '')} fill:#d32f2f,stroke:#b71c1c,color:#ffffff\n`;
+                  });
+                } else {
+                  diagram = 'flowchart TD\n  Analysis["AI Analysis"]\n  Content["' + content.substring(0, 100).replace(/"/g, '\\"') + '..."]\n  Analysis --> Content';
+                }
               }
               
               // Clean up the diagram
@@ -181,7 +236,7 @@ jobs:
             fs.writeFileSync("debug.txt", JSON.stringify({
               apiResponse: data,
               extractedDiagram: diagram,
-              routes: codeToAnalyze,
+              projectCode: projectCode,
               diff: diff
             }, null, 2));
             
