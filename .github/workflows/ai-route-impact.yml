@@ -46,17 +46,22 @@ jobs:
             let codeToAnalyze = getAllRoutes();
 
             const prompt = [
-              "You are an AI code reviewer generating diagrams.",
+              "You are an AI code analysis agent.",
               "",
-              "Analyze the following Node.js Express repository routes and produce a **valid Mermaid flowchart** (flowchart TD) **only**:",
-              "- Routes should be colored blue.",
-              "- Functions should be colored green.",
-              "- Show middleware for routes.",
-              "- Highlight which functions are called by each route.",
-              "- Only output Mermaid syntax, no text explanations.",
+              "Git diff:",
+              `${diff}`,
               "",
-              "Routes and controllers code:",
-              `${codeToAnalyze}`
+              "Express routes:",
+              `${JSON.stringify(routes, null, 2)}`,
+              "",
+              "Dependency graph:",
+              `${JSON.stringify(deps, null, 2)}`,
+              "",
+              "Task:",
+              "1. Identify which routes might be impacted by the changed code.",
+              "2. Output a Markdown report with:",
+              "   - List of impacted routes",
+              "   - Mermaid diagram showing dependencies"
             ].join('\n');
 
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
