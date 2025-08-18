@@ -1,47 +1,101 @@
-name: AI Route Impact Agent (DeepSeek)
+name: AI Agent DeepSeek Analysis
 
 on:
   pull_request:
-    types: [opened, synchronize]
-
-permissions:
-  contents: read
-  pull-requests: write
+    types: [opened, synchronize, reopened]
 
 jobs:
-  analyze:
+  ai-analysis:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install madge glob node-fetch
-
-      - name: Extract routes & deps
-        run: node scripts/analyzeRoutes.js
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Get PR diff
-        run: git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} > pr.diff
+        run: |
+          git fetch origin main
+          git diff origin/main...HEAD > pr.diff
 
-      - name: Show PR diff
-        run: cat pr.diff
+      - name: Run AI agent with DeepSeek
+        run: |
+          node -e "
+          const fs = require('fs');
+          const fetch = require('node-fetch');
 
-      - name: Run AI agent (DeepSeek)
-        run: node scripts/aiAgentDeepSeek.js
+          const API_KEY = process.env.DEEPSEEK_API_KEY;
+          const diff = fs.readFileSync('pr.diff','utf8');
+          const routes = fs.existsSync('routes.json') ? JSON.parse(fs.readFileSync('routes.json','utf8')) : {};
+          const deps = fs.existsSync('deps.json') ? JSON.parse(fs.readFileSync('deps.json','utf8')) : {};
+
+          const prompt = \`
+You are an AI code analysis agent.
+Generate a **Markdown report** for GitHub PR comments.
+
+Data provided:
+- Git diff
+- API routes (routes.json)
+- Dependencies (deps.json)
+
+### Instructions:
+1. Detect which **routes are impacted** by the changes in the diff (e.g., PUT /users).
+2. Show a dependency + route diagram in **Mermaid** combining:
+   - API routes as entry points
+   - Dependencies they touch
+3. Use **pastel colors** for readability:
+   - Routes: light blue (#bbf)
+   - Services/DB: light green (#bfb)
+   - External deps: light pink (#f9f)
+4. Example:
+   \`\`\`mermaid
+   graph TD
+   route_users[PUT /users] --> service_users[UserService]
+   service_users --> db_users[(users table)]
+   style route_users fill:#bbf,stroke:#333,stroke-width:2px
+   style service_users fill:#bfb,stroke:#333,stroke-width:2px
+   style db_users fill:#f9f,stroke:#333,stroke-width:2px
+   \`\`\`
+
+Git diff:
+\${diff}
+
+Routes.json:
+\${JSON.stringify(routes,null,2)}
+
+Deps.json:
+\${JSON.stringify(deps,null,2)}
+\`;
+
+          (async()=>{
+            try {
+              const res = await fetch('https://openrouter.ai/api/v1/chat/completions',{
+                method:'POST',
+                headers:{
+                  'Content-Type':'application/json',
+                  'Authorization':\`Bearer \${API_KEY}\`
+                },
+                body:JSON.stringify({
+                  model:'deepseek/deepseek-r1:free',
+                  messages:[{role:'user',content:prompt}]
+                })
+              });
+
+              const data = await res.json();
+              let output='No analysis';
+              if(data.choices?.[0]?.message?.content){
+                output=data.choices[0].message.content;
+              }
+              fs.writeFileSync('impact.md',output);
+              console.log('✅ Analysis written to impact.md');
+            } catch (err) {
+              console.error('❌ Error calling DeepSeek API:', err);
+            }
+          })();
+          "
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
 
-      - name: Show impact.md
-        run: cat impact.md
-
-      - name: Post PR comment
+      - name: Post PR Comment with Analysis
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           path: impact.md
