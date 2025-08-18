@@ -1,4 +1,5 @@
 const test = require('./test');
+const { summin } = require('./util');
 
 // In-memory storage for todos (in a real app, you'd use a database)
 let todos = [
@@ -85,7 +86,8 @@ const updateTodo = (id, updates) => {
   const updatedTodo = {
     ...todos[todoIndex],
     ...updates,
-    _updatedAtt: new Date().toISOString()
+    _updatedAtt: new Date().toISOString(),
+    summin: summin(1, 2)
   };
   
   // Validate title if it's being updated
