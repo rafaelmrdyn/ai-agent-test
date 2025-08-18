@@ -83,7 +83,7 @@ jobs:
             }
 
             if (data.error) {
-              console.error("❌ DeepSeek API error:", data.error);
+              diagram = "❌ DeepSeek API error: " + data.error.message;
             }
 
             // Wrap in mermaid block for GitHub rendering
