@@ -24,7 +24,7 @@ jobs:
 
       - name: Generate route dependency diagram
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
           cat > aiDiagram.js <<'EOF'
           const fs = require('fs');
