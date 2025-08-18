@@ -35,7 +35,7 @@ jobs:
             }
 
             if (!diff.trim()) {
-              console.log("⚠️ No changes detected.");
+              fs.writeFileSync("impact.md", "⚠️ No changes detected in this PR.");
               return;
             }
 
@@ -56,17 +56,17 @@ jobs:
 
             const data = await response.json();
             if (data.error) {
-              console.error("❌ DeepSeek API error:", data.error);
+              fs.writeFileSync("impact.md", `❌ DeepSeek API error: ${data.error.message || JSON.stringify(data.error)}`);
               return;
             }
 
-            const analysis = data.choices?.[0]?.message?.content || "No analysis";
+            const analysis = data.choices?.[0]?.message?.content || "No analysis generated.";
             fs.writeFileSync("impact.md", analysis);
             console.log("✅ Analysis written to impact.md");
           }
 
           run().catch(err => {
-            console.error("❌ Error running AI analysis:", err);
+            fs.writeFileSync("impact.md", `❌ Error running AI analysis: ${err.message}`);
             process.exit(1);
           });
           EOF
