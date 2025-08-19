@@ -37,7 +37,7 @@ class TodoRepository {
       let todos = Array.from(this.todos.values());
       
       // Apply filters
-      if (filters.completed !== undefined) {
+      if (!filters.completed) {
         const isCompleted = filters.completed === 'true';
         todos = todos.filter(todo => todo.completed === isCompleted);
       }
