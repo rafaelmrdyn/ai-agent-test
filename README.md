@@ -1,176 +1,180 @@
-# Express Todo REST API
+# Enterprise Todo API
 
-A simple Express.js starter with a complete todo REST API implementation.
+A comprehensive, enterprise-level Todo API built with Express.js featuring a layered architecture with proper separation of concerns.
 
-## Features
+## 🏗️ Architecture
 
-- ✅ Full CRUD operations for todos
-- 🔍 Search and filter functionality
-- 🛡️ Security middleware (Helmet, CORS)
-- 📝 Request logging (Morgan)
-- 🏗️ Modular router structure with helper functions
-- 🚀 Development mode with hot reload
-- 🔧 Separation of concerns (routes vs business logic)
-
-## Project Structure
+This project follows a clean, layered architecture pattern:
 
 ```
-├── src/
-│   ├── app.js              # Main Express application
-│   ├── helpers/
-│   │   └── todoHelpers.js  # Todo business logic and helper functions
-│   └── router/
-│       └── todo.js         # Todo routes
-├── package.json
-└── README.md
+src/
+├── config/          # Configuration and database setup
+├── models/          # Data models and validation
+├── repositories/    # Data access layer
+├── services/        # Business logic layer
+├── routes/          # API route handlers
+├── utils/           # Utility functions and helpers
+└── app.js          # Express application setup
 ```
 
-## Installation
+### Layer Responsibilities
 
-1. Install dependencies:
+- **Models**: Data structure definitions and validation
+- **Repositories**: Data persistence and database operations
+- **Services**: Business logic and orchestration
+- **Routes**: HTTP request handling and response formatting
+- **Utils**: Cross-cutting concerns (logging, validation, analytics)
+
+## 🚀 Features
+
+- **Layered Architecture**: Clean separation of concerns
+- **Comprehensive Validation**: Input validation and sanitization
+- **Structured Logging**: JSON-formatted logs with different levels
+- **Analytics**: Todo statistics and insights
+- **Error Handling**: Global error handling with proper HTTP status codes
+- **Security**: Helmet.js security headers and CORS configuration
+- **Graceful Shutdown**: Proper process termination handling
+
+## 📦 Installation
+
 ```bash
 npm install
 ```
 
-2. Start the development server:
+## 🏃‍♂️ Running the Application
+
+### Development
 ```bash
 npm run dev
 ```
 
-3. Or start in production mode:
+### Production
 ```bash
 npm start
 ```
 
-The server will start on `http://localhost:3000`
+## 🔗 API Endpoints
 
-## API Endpoints
+### Todo Management
+
+- `GET /api/todos` - Get all todos with filtering
+- `GET /api/todos/stats` - Get todo statistics
+- `GET /api/todos/:id` - Get specific todo
+- `POST /api/todos` - Create new todo
+- `PUT /api/todos/:id` - Full update of todo
+- `PATCH /api/todos/:id` - Partial update of todo
+- `DELETE /api/todos/:id` - Delete specific todo
+- `DELETE /api/todos` - Delete all todos
+- `GET /api/todos/user/:userId` - Get todos by user
 
 ### Health Check
-- `GET /health` - Check server status
 
-### Todos
+- `GET /health` - Application health status
 
-#### Get All Todos
-- `GET /api/todos`
-- Query parameters:
-  - `completed=true|false` - Filter by completion status
-  - `search=string` - Search in title and description
+## 📊 Todo Model
 
-#### Get Single Todo
-- `GET /api/todos/:id`
-
-#### Create Todo
-- `POST /api/todos`
-- Body:
-```json
+```javascript
 {
-  "title": "Todo title",
-  "description": "Optional description"
+  id: "uuid",
+  title: "string (required, max 100 chars)",
+  description: "string (max 500 chars)",
+  completed: "boolean (default: false)",
+  priority: "low|medium|high (default: medium)",
+  dueDate: "ISO date string",
+  createdAt: "ISO date string",
+  updatedAt: "ISO date string",
+  userId: "string",
+  tags: ["string array (max 10 tags, 20 chars each)"]
 }
 ```
 
-#### Update Todo (Full)
-- `PUT /api/todos/:id`
-- Body:
-```json
-{
-  "title": "Updated title",
-  "description": "Updated description",
-  "completed": true
-}
+## 🔍 Query Parameters
+
+### Filtering
+- `completed=true|false` - Filter by completion status
+- `priority=low|medium|high` - Filter by priority
+- `search=string` - Search in title and description
+- `userId=string` - Filter by user ID
+
+## 📈 Analytics Features
+
+The API provides comprehensive analytics:
+
+- **Completion Rate**: Percentage of completed todos
+- **Priority Breakdown**: Distribution across priority levels
+- **Recent Activity**: Last 10 updated todos
+- **Tag Analysis**: Most used tags
+- **Completion Trends**: Daily, weekly, monthly trends
+- **Productivity Score**: Calculated based on completion and priority
+- **Insights**: AI-generated recommendations
+
+## 🛡️ Security Features
+
+- **Helmet.js**: Security headers
+- **CORS**: Configurable cross-origin requests
+- **Input Validation**: Comprehensive validation and sanitization
+- **Error Handling**: No sensitive information leakage in production
+
+## 📝 Logging
+
+Structured JSON logging with different levels:
+
+- **ERROR**: Application errors and exceptions
+- **WARN**: Warning conditions
+- **INFO**: General information and requests
+- **DEBUG**: Detailed debugging information
+
+## 🔧 Configuration
+
+Environment variables:
+
+- `PORT`: Server port (default: 3000)
+- `NODE_ENV`: Environment (development|production)
+- `LOG_LEVEL`: Logging level (error|warn|info|debug)
+- `ALLOWED_ORIGINS`: CORS allowed origins (comma-separated)
+
+## 🏗️ Dependency Chain Example
+
+This project demonstrates complex dependency relationships:
+
+```
+test.js (utility functions)
+  ↓
+todoHelpers.js (imports test.js)
+  ↓
+TodoRepository.js (uses todoHelpers)
+  ↓
+TodoService.js (uses TodoRepository)
+  ↓
+routes/todo.js (uses TodoService)
+  ↓
+API endpoints
 ```
 
-#### Update Todo (Partial)
-- `PATCH /api/todos/:id`
-- Body (any combination):
-```json
-{
-  "title": "Updated title",
-  "description": "Updated description",
-  "completed": true
-}
-```
+## 🧪 Testing the Dependency Analysis
 
-#### Delete Todo
-- `DELETE /api/todos/:id`
+The GitHub Actions workflow will analyze changes and show:
 
-#### Delete All Todos
-- `DELETE /api/todos`
+1. **Changed Functions**: What functions were modified
+2. **Dependency Chain**: How changes propagate through the system
+3. **Affected Routes**: Which API endpoints are impacted
+4. **Visual Diagram**: Mermaid diagram showing relationships
 
-## Example Usage
+## 📚 Code Quality
 
-### Get all todos
-```bash
-curl http://localhost:3000/api/todos
-```
+- **ESLint**: Code linting and style enforcement
+- **Prettier**: Code formatting
+- **Modular Design**: Reusable and maintainable code
+- **Type Safety**: Proper validation and error handling
 
-### Create a new todo
-```bash
-curl -X POST http://localhost:3000/api/todos \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Buy groceries", "description": "Milk, bread, eggs"}'
-```
+## 🤝 Contributing
 
-### Update a todo
-```bash
-curl -X PUT http://localhost:3000/api/todos/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Buy groceries", "description": "Milk, bread, eggs", "completed": true}'
-```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-### Mark todo as completed
-```bash
-curl -X PATCH http://localhost:3000/api/todos/1 \
-  -H "Content-Type: application/json" \
-  -d '{"completed": true}'
-```
+## 📄 License
 
-### Delete a todo
-```bash
-curl -X DELETE http://localhost:3000/api/todos/1
-```
-
-## Response Format
-
-All API responses follow this format:
-
-```json
-{
-  "success": true,
-  "data": {...},
-  "message": "Optional message"
-}
-```
-
-Error responses:
-```json
-{
-  "success": false,
-  "error": "Error message"
-}
-```
-
-## Dependencies
-
-- **express** - Web framework
-- **cors** - Cross-origin resource sharing
-- **helmet** - Security headers
-- **morgan** - HTTP request logger
-- **nodemon** - Development server with auto-reload
-
-## Development
-
-The project uses nodemon for development, which automatically restarts the server when files change.
-
-## Next Steps
-
-To enhance this starter:
-
-1. Add database integration (MongoDB, PostgreSQL, etc.)
-2. Implement user authentication
-3. Add input validation middleware
-4. Add unit tests
-5. Add API documentation with Swagger
-6. Implement rate limiting
-7. Add environment configuration
+MIT License - see LICENSE file for details
