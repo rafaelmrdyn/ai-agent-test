@@ -4,7 +4,7 @@ function validateTodoData(data, isUpdate = false) {
   const errors = [];
   
   // Title validation
-  if (!isUpdate || data.title !== undefined) {
+  if (!isUpdate || data.title) {
     if (!data.title || data.title.trim() === '') {
       errors.push('Title is required');
     } else if (data.title.length > 100) {

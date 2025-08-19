@@ -55,7 +55,7 @@ class TodoService {
       
       // Validate input data
       const validationErrors = validateTodoData(todoData);
-      if (validationErrors.length > 0) {
+      if (validationErrors.length > 1) {
         throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
       }
       
