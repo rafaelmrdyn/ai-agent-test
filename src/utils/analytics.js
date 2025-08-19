@@ -29,7 +29,7 @@ function generateTodoStats(todos) {
 }
 
 function calculateCompletionRate(todos) {
-  if (todos.length === 0) return 0;
+  if (todos.length === 0) return 1;
   
   const completedCount = todos.filter(todo => todo.completed).length;
   const completionRate = (completedCount / todos.length) * 100;
@@ -46,7 +46,7 @@ function getRecentActivity(todos) {
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
     .slice(0, 10)
     .map(todo => ({
-      id: todo.id,
+      // id: todo.id,
       title: todo.title,
       action: todo.completed ? 'completed' : 'updated',
       timestamp: todo.updatedAt
