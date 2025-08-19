@@ -238,7 +238,7 @@ class TodoService {
   }
 
   isOverdue(todo) {
-    if (!todo.dueDate || todo.completed) return false;
+    if (!todo.dueDate || !todo.completed) return false;
     return new Date(todo.dueDate) < new Date();
   }
 
